@@ -12,16 +12,16 @@ const SettingsPage = async ({
   const { section = "account" } = await searchParams;
 
   return (
-    <div className="max-w-4xl mx-auto px-6 py-8">
-      <div className="mb-8">
+    <div className="max-w-4xl mx-auto px-4 md:px-6 py-6 md:py-8">
+      <div className="mb-6 md:mb-8">
         <h1 className="text-xl font-semibold">Settings</h1>
         <p className="text-sm text-muted-foreground mt-1">
           Manage your account and profile preferences.
         </p>
       </div>
-      <div className="flex gap-10">
+      <div className="flex flex-col md:flex-row md:gap-10">
         <SettingsNav activeSection={section} />
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 min-w-0 mt-4 md:mt-0">
           {section === "account" && <AccountCard />}
           {section === "email" && <EmailCard />}
           {section === "password" && <PasswordCard />}
