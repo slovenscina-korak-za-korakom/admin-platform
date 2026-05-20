@@ -20,6 +20,7 @@ import {useRouter} from "next/navigation";
 import {getSessionColor, hexToRgba} from "@/lib/session-colors";
 import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar";
 import {Button} from "@/components/ui/button";
+import Link from "next/link";
 
 const DAYS_OF_WEEK = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
@@ -238,7 +239,14 @@ export const EventSheet = ({
                   {event.location === "online" && (
                     <span className="text-xs text-muted-foreground italic inline-flex items-center gap-1">
                       <IconBrandZoom className="h-3.5 w-3.5 shrink-0"/>
-                      Link coming soon
+                      {event.videoCallUrl ? (
+                        <Link href={event.videoCallUrl} target="_blank" rel="noopener noreferrer" className="italic hover:underline">
+                          Video call url
+                        </Link>
+                      ) : (
+                        <span>No url provided</span>
+                      )}
+
                     </span>
                   )}
                 </div>
@@ -250,7 +258,8 @@ export const EventSheet = ({
               <div className="flex flex-row  mb-3 items-center gap-2 justify-between w-full">
                 <div className="inline-flex items-center  gap-2">
                   <IconCalendar size={14} className="text-muted-foreground"/>
-                  <span className="text-[11px] font-bold leading-0 uppercase tracking-widest text-muted-foreground">When</span>
+                  <span
+                    className="text-[11px] font-bold leading-0 uppercase tracking-widest text-muted-foreground">When</span>
                 </div>
 
                 {/* Countdown / status chip */}

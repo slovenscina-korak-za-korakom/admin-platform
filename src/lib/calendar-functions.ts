@@ -38,6 +38,7 @@ export const getEvents = (data: SessionData[], availableSlots: AvailableSlotData
         sessionType: session.sessionType,
         duration: session.duration,
         invitationId: session.invitationId,
+        videoCallUrl: session.videoCallUrl,
         isAvailable: false,
       },
     };
@@ -73,6 +74,7 @@ export const getEvents = (data: SessionData[], availableSlots: AvailableSlotData
         location: slot.location,
         sessionType: slot.sessionType,
         duration: slot.duration,
+        videoCallUrl: slot.videoCallUrl,
         isAvailable: true,
         color,
       },

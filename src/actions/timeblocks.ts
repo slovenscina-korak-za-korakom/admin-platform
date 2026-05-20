@@ -267,6 +267,7 @@ export const getScheduleData = async () => {
         sessionType: timeblocksTable.sessionType,
         location: timeblocksTable.location,
         studentId: timeblocksTable.studentId,
+        videoCallUrl: timeblocksTable.videoCallUrl,
       })
       .from(timeblocksTable)
       .innerJoin(tutorsTable, eq(tutorsTable.id, timeblocksTable.tutorId))
@@ -614,6 +615,7 @@ export const createOneTimeSession = async (data: {
   location: "online" | "classroom";
   studentClerkId: string;
   timezone: string;
+  videoCallUrl?: string;
 }) => {
   const {userId} = await auth();
   if (!userId) return {message: "Unauthorized", status: 401};
@@ -673,6 +675,7 @@ export const createOneTimeSession = async (data: {
         sessionType: data.sessionType,
         location: data.location,
         studentId: data.studentClerkId,
+        videoCallUrl: data.videoCallUrl || null,
       })
       .returning({id: timeblocksTable.id});
 
@@ -701,6 +704,7 @@ export const createOneTimeSession = async (data: {
       duration: data.duration,
       sessionType: data.sessionType,
       location: data.location,
+      videoCallUrl: data.videoCallUrl || undefined,
     } as const;
 
     // 8. Send confirmation email to student
@@ -741,6 +745,7 @@ export const createAvailableSlot = async (data: {
   sessionType: "individual" | "group" | "test";
   location: "online" | "classroom";
   timezone: string;
+  videoCallUrl?: string;
 }) => {
   const {userId} = await auth();
   if (!userId) return {message: "Unauthorized", status: 401};
@@ -767,6 +772,7 @@ export const createAvailableSlot = async (data: {
       duration: data.duration,
       sessionType: data.sessionType,
       location: data.location,
+      videoCallUrl: data.videoCallUrl || null,
     });
 
     return {message: "Available slot created successfully", status: 200};
@@ -816,6 +822,7 @@ export const getAvailableSlots = async () => {
         duration: availableSlotsTable.duration,
         sessionType: availableSlotsTable.sessionType,
         location: availableSlotsTable.location,
+        videoCallUrl: availableSlotsTable.videoCallUrl,
       })
       .from(availableSlotsTable)
       .innerJoin(tutorsTable, eq(tutorsTable.id, availableSlotsTable.tutorId))

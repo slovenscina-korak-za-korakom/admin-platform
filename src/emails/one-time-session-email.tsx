@@ -25,6 +25,7 @@ interface OneTimeSessionEmailProps {
   sessionType: "individual" | "group" | "test";
   location: "online" | "classroom";
   recipientType: "student" | "tutor";
+  videoCallUrl?: string;
   locale?: "en" | "ru";
 }
 
@@ -45,6 +46,7 @@ const getTranslations = (locale: "en" | "ru") => {
       test: "Test",
       online: "Online",
       classroom: "Classroom",
+      videoCall: "Video call",
       disclaimer:
         "This confirmation was sent by Slovenščina Korak za Korakom. If you have questions, please contact your tutor directly.",
       about: "About",
@@ -67,6 +69,7 @@ const getTranslations = (locale: "en" | "ru") => {
       test: "Пробное",
       online: "Онлайн",
       classroom: "В классе",
+      videoCall: "Видеозвонок",
       disclaimer:
         "Это подтверждение отправлено организацией Slovenščina Korak za Korakom. По вопросам обращайтесь к преподавателю.",
       about: "О нас",
@@ -88,6 +91,7 @@ export const OneTimeSessionEmail = ({
   sessionType,
   location,
   recipientType,
+  videoCallUrl,
   locale = "en",
 }: OneTimeSessionEmailProps) => {
   const t = getTranslations(locale);
@@ -121,13 +125,14 @@ export const OneTimeSessionEmail = ({
       ? `You have successfully booked a session with ${studentName}. Here are the details:`
       : `Вы успешно записали занятие с ${studentName}. Вот подробности:`;
 
-  const rows = [
+  const rows: { label: string; value: string; href?: string }[] = [
     { label: t.date, value: date },
     { label: t.time, value: `${startTime} – ${endTime}` },
     { label: t.duration, value: durationText },
     { label: t.type, value: sessionTypeLabel },
     { label: t.location, value: locationLabel },
     { label: withLabel, value: withName },
+    ...(videoCallUrl ? [{ label: t.videoCall, value: videoCallUrl, href: videoCallUrl }] : []),
   ];
 
   return (
@@ -251,7 +256,7 @@ export const OneTimeSessionEmail = ({
                   {t.details}
                 </Heading>
 
-                {rows.map(({ label, value }, i) => (
+                {rows.map(({ label, value, href }, i) => (
                   <Row key={label} style={{ marginBottom: i < rows.length - 1 ? "16px" : "0" }}>
                     <Column style={{ width: "40%" }}>
                       <Text
@@ -267,17 +272,32 @@ export const OneTimeSessionEmail = ({
                       </Text>
                     </Column>
                     <Column style={{ width: "60%" }}>
-                      <Text
-                        style={{
-                          fontSize: "15px",
-                          lineHeight: "24px",
-                          color: "#111827",
-                          fontWeight: "500",
-                          margin: "0",
-                        }}
-                      >
-                        {value}
-                      </Text>
+                      {href ? (
+                        <Link
+                          href={href}
+                          style={{
+                            fontSize: "15px",
+                            lineHeight: "24px",
+                            color: "#2563EB",
+                            fontWeight: "500",
+                            wordBreak: "break-all",
+                          }}
+                        >
+                          {value}
+                        </Link>
+                      ) : (
+                        <Text
+                          style={{
+                            fontSize: "15px",
+                            lineHeight: "24px",
+                            color: "#111827",
+                            fontWeight: "500",
+                            margin: "0",
+                          }}
+                        >
+                          {value}
+                        </Text>
+                      )}
                     </Column>
                   </Row>
                 ))}

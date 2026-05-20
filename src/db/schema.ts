@@ -65,6 +65,7 @@ export const timeblocksTable = pgTable("timeblocks", {
   location: varchar({length: 255}).notNull(),
   studentId: varchar({length: 128}).notNull(),
   updatedAt: timestamp().notNull().defaultNow(),
+  videoCallUrl: varchar({length: 255}),
 });
 
 export const tutorsTable = pgTable("tutors", {
@@ -129,6 +130,7 @@ export const availableSlotsTable = pgTable("available_slots", {
   sessionType: varchar({length: 255}).notNull(),
   location: varchar({length: 255}).notNull(),
   createdAt: timestamp({withTimezone: true}).notNull().defaultNow(),
+  videoCallUrl: varchar({length: 255}),
 });
 
 export const coursesTable = pgTable("courses", {

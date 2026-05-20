@@ -171,6 +171,7 @@ export default function Calendar({data, availableSlots = [], studentsInfo}: {
         location: arg.event.extendedProps.location,
         studentId: "",
         studentInfo: null,
+        videoCallUrl: arg.event.extendedProps.videoCallUrl,
       };
       setSelectedEvent(session);
       setIsEventSheetOpen(true);
@@ -190,6 +191,7 @@ export default function Calendar({data, availableSlots = [], studentsInfo}: {
       studentId: arg.event.extendedProps.studentId,
       studentInfo: arg.event.extendedProps.studentInfo,
       invitationId: arg.event.extendedProps.invitationId,
+      videoCallUrl: arg.event.extendedProps.videoCallUrl,
     };
     setSelectedEvent(session);
     setIsEventSheetOpen(true);

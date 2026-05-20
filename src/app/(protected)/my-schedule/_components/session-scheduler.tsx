@@ -37,8 +37,8 @@ import {TimePicker} from "@/components/ui/time-picker";
 import {AnimatedButtonGroup, AnimatedButtonGroupItem} from "@/components/ui/animated-button-group";
 import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar";
 import {getEvents} from "@/lib/calendar-functions";
+import {Input} from "@/components/ui/input";
 
-// ── Types ──────────────────────────────────────────────────────────────────
 
 interface SessionFormData {
   date: string;
@@ -48,10 +48,10 @@ interface SessionFormData {
   location: "online" | "classroom";
   studentClerkId: string;
   studentEmail: string;
+  videoCallUrl: string;
   color: string;
 }
 
-// ── Constants ──────────────────────────────────────────────────────────────
 
 const SESSION_COLORS = {
   individual: getSessionColor("individual"),
@@ -83,7 +83,6 @@ const SESSION_TYPE_CONFIG = {
 
 const DURATION_PRESETS = [30, 45, 60, 75, 90, 120];
 
-// ── Helpers ────────────────────────────────────────────────────────────────
 
 const formatDuration = (minutes: number): string => {
   const h = Math.floor(minutes / 60);
@@ -108,7 +107,6 @@ const addMinutes = (time: string, minutes: number): string => {
 };
 
 
-// ── Component ──────────────────────────────────────────────────────────────
 
 interface SessionSchedulerProps {
   data: SessionData[];
@@ -174,10 +172,10 @@ const SessionScheduler = ({data, availableSlots}: SessionSchedulerProps) => {
     location: "online",
     studentClerkId: "",
     studentEmail: "",
+    videoCallUrl: "",
     color: SESSION_COLORS.individual,
   });
 
-  // ── Calendar navigation ────────────────────────────────────────────────
 
   const updateCalendarTitle = useCallback(() => {
     const api = calendarRef.current?.getApi();
@@ -211,7 +209,6 @@ const SessionScheduler = ({data, availableSlots}: SessionSchedulerProps) => {
     updateCalendarTitle();
   }, [updateCalendarTitle]);
 
-  // ── Slot selection ─────────────────────────────────────────────────────
 
   const handleDateSelect = useCallback((selectInfo: DateSelectArg) => {
     const start = selectInfo.start;
@@ -250,13 +247,13 @@ const SessionScheduler = ({data, availableSlots}: SessionSchedulerProps) => {
       location: "online",
       studentClerkId: "",
       studentEmail: "",
+      videoCallUrl: "",
       color: SESSION_COLORS.individual,
     });
     setIsSheetOpen(true);
     calendarRef.current?.getApi().unselect();
   }, []);
 
-  // ── Save ──────────────────────────────────────────────────────────────
 
   const handleSave = useCallback(() => {
     if (mode === "book" && !formData.studentClerkId) return;
@@ -270,6 +267,7 @@ const SessionScheduler = ({data, availableSlots}: SessionSchedulerProps) => {
           sessionType: formData.sessionType,
           location: formData.location,
           timezone,
+          videoCallUrl: formData.videoCallUrl || undefined,
         })
         : await createOneTimeSession({
           date: formData.date,
@@ -279,6 +277,7 @@ const SessionScheduler = ({data, availableSlots}: SessionSchedulerProps) => {
           location: formData.location,
           studentClerkId: formData.studentClerkId,
           timezone,
+          videoCallUrl: formData.videoCallUrl || undefined,
         });
 
       if (result.status === 200) {
@@ -296,15 +295,12 @@ const SessionScheduler = ({data, availableSlots}: SessionSchedulerProps) => {
     setError(null);
   }, [isPending]);
 
-  // ── Calendar events ────────────────────────────────────────────────────
   const calendarEvents = getEvents(data, availableSlots, true);
 
-  // ── Derived form values ────────────────────────────────────────────────
 
   const endTime = addMinutes(formData.startTime, formData.duration);
   const sessionConfig = SESSION_TYPE_CONFIG[formData.sessionType];
 
-  // ── Render ─────────────────────────────────────────────────────────────
 
   return (
     <div className="h-full w-full flex flex-col">
@@ -863,6 +859,13 @@ const SessionScheduler = ({data, availableSlots}: SessionSchedulerProps) => {
                   Classroom
                 </AnimatedButtonGroupItem>
               </AnimatedButtonGroup>
+            </div>
+
+            <div className="px-5 py-4">
+              <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-3">
+                Video Call Url
+              </p>
+              <Input placeholder=" https://teams.microsoft.com/meet/12345" value={formData.videoCallUrl} onChange={(v) => setFormData({...formData, videoCallUrl: v.target.value})} />
             </div>
           </div>
 

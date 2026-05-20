@@ -30,6 +30,7 @@ export interface SessionData {
   studentId: string;
   tutorId: number;
   invitationId?: number;
+  videoCallUrl?: string | null;
 }
 
 export interface ScheduleData {
@@ -47,6 +48,7 @@ export interface AvailableSlotData {
   sessionType: string;
   location: string;
   tutorId: number;
+  videoCallUrl?: string | null;
 }
 
 export interface StudentPreferences {
