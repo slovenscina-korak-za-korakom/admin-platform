@@ -15,7 +15,7 @@ import {EventSheet} from "@/components/calendar/event-sheet";
 import "@/components/calendar/calendar-styles.css";
 import {getStatusColor} from "./calendar-functions";
 import {deleteAvailableSlot} from "@/actions/timeblocks";
-import {getSessionColor} from "@/lib/session-colors";
+import {getEvents} from "@/lib/calendar-functions";
 
 export default function Calendar({data, availableSlots = [], studentsInfo}: {
   data: SessionData[];
@@ -53,72 +53,7 @@ export default function Calendar({data, availableSlots = [], studentsInfo}: {
   const calendarRef = useRef<FullCalendar>(null);
   const containerRef = useCalendarResize(calendarRef);
 
-  const bookedEvents = data.map((session) => {
-    const studentInfo = session.studentId
-      ? studentsInfo[session.studentId]
-      : null;
-
-    const studentName = studentInfo?.name || "Loading...";
-
-    return {
-      id: session.id.toString(),
-      title: `${studentName} - ${session.sessionType}`,
-      start: session.startTime,
-      end: new Date(
-        new Date(session.startTime).getTime() + session.duration * 60000
-      ),
-      extendedProps: {
-        status: session.status,
-        studentInfo: studentInfo,
-        studentId: session.studentId,
-        tutorId: session.tutorId,
-        location: session.location,
-        sessionType: session.sessionType,
-        duration: session.duration,
-        invitationId: session.invitationId,
-        isAvailable: false,
-      },
-    };
-  });
-
-  // only grab booked keys instead of all events
-  const bookedKeys = new Set(
-    data.filter((s) => s.status === "booked").map((s) => `${new Date(s.startTime).getTime()}-${s.sessionType}-${s.duration}`)
-  );
-
-  const filteredAvailableSlots = availableSlots.filter((slot) => {
-    if (!slot.startTime) return false;
-    const key = `${new Date(slot.startTime).getTime()}-${slot.sessionType}-${slot.duration}`;
-    return !bookedKeys.has(key);
-  });
-
-  const availableEvents = filteredAvailableSlots.map((slot) => {
-    const color = getSessionColor(slot.sessionType);
-    const title =
-      slot.sessionType === "group"
-        ? "Group"
-        : slot.sessionType === "test"
-          ? "Test"
-          : "Individual";
-    return {
-      id: `available-${slot.id}`,
-      title,
-      start: slot.startTime,
-      end: new Date(new Date(slot.startTime).getTime() + slot.duration * 60000),
-      backgroundColor: "transparent",
-      borderColor: color,
-      textColor: color,
-      extendedProps: {
-        location: slot.location,
-        sessionType: slot.sessionType,
-        duration: slot.duration,
-        isAvailable: true,
-        color,
-      },
-    };
-  });
-
-  const events = [...bookedEvents, ...availableEvents];
+  const events = getEvents(data, availableSlots, studentsInfo);
 
   // Update URL params when view or date changes
   const updateUrlParams = useCallback(

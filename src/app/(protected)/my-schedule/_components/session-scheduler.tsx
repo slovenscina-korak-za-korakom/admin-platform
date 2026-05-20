@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import React, {useCallback, useEffect, useMemo, useRef, useState, useTransition} from "react";
+import React, {useCallback, useEffect, useRef, useState, useTransition} from "react";
 import {useRouter} from "next/navigation";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
@@ -36,6 +36,7 @@ import {DatePicker} from "@/components/ui/date-picker";
 import {TimePicker} from "@/components/ui/time-picker";
 import {AnimatedButtonGroup, AnimatedButtonGroupItem} from "@/components/ui/animated-button-group";
 import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar";
+import {getEvents} from "@/lib/calendar-functions";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -296,49 +297,7 @@ const SessionScheduler = ({data, availableSlots}: SessionSchedulerProps) => {
   }, [isPending]);
 
   // ── Calendar events ────────────────────────────────────────────────────
-
-  const calendarEvents = useMemo(() => {
-    const booked = data.map((session) => {
-      const color = getSessionColor(session.sessionType)
-
-      return {
-        id: `existing-${session.id}`,
-        title: session.sessionType,
-        start: session.startTime,
-        end: new Date(new Date(session.startTime).getTime() + session.duration * 60000),
-        backgroundColor: color,
-        borderColor: color,
-        textColor: "#ffffff",
-        extendedProps: {
-          sessionType: session.sessionType,
-          location: session.location,
-          isAvailable: false,
-        },
-      };
-    });
-
-    const available = availableSlots.map((slot) => {
-      const color = getSessionColor(slot.sessionType);
-
-      return {
-        id: `available-${slot.id}`,
-        title: slot.sessionType,
-        start: slot.startTime,
-        end: new Date(new Date(slot.startTime).getTime() + slot.duration * 60000),
-        backgroundColor: "transparent",
-        borderColor: color,
-        textColor: color,
-        extendedProps: {
-          sessionType: slot.sessionType,
-          location: slot.location,
-          isAvailable: true,
-          color,
-        },
-      };
-    });
-
-    return [...booked, ...available];
-  }, [data, availableSlots]);
+  const calendarEvents = getEvents(data, availableSlots, true);
 
   // ── Derived form values ────────────────────────────────────────────────
 
