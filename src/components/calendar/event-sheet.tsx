@@ -308,9 +308,7 @@ export const EventSheet = ({
                 {/* Name + email + level */}
                 <div className="flex items-center gap-3 mb-4">
                   <div
-                    className="w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-bold shrink-0 overflow-hidden"
-                    style={{background: "linear-gradient(135deg, #2563eb, #7c3aed)"}}
-                  >
+                    className="w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-bold shrink-0 overflow-hidden">
                     <Avatar>
                       <AvatarImage src={student.image} alt={`${student.name}'s profile picture`}/>
                       <AvatarFallback>

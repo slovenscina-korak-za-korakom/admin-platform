@@ -81,8 +81,9 @@ export default function Calendar({data, availableSlots = [], studentsInfo}: {
     };
   });
 
+  // only grab booked keys instead of all events
   const bookedKeys = new Set(
-    data.map((s) => `${new Date(s.startTime).getTime()}-${s.sessionType}-${s.duration}`)
+    data.filter((s) => s.status === "booked").map((s) => `${new Date(s.startTime).getTime()}-${s.sessionType}-${s.duration}`)
   );
 
   const filteredAvailableSlots = availableSlots.filter((slot) => {
