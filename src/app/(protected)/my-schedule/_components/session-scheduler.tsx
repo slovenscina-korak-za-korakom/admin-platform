@@ -126,7 +126,7 @@ const SessionScheduler = ({data, availableSlots}: SessionSchedulerProps) => {
   const [timezone] = useState<string>(
     () => Intl.DateTimeFormat().resolvedOptions().timeZone
   );
-  const [currentView, setCurrentView] = useState("dayGridMonth");
+  const [currentView, setCurrentView] = useState("timeGridWeek");
   const [showWeekends, setShowWeekends] = useState(true);
   const [isViewDropdownOpen, setIsViewDropdownOpen] = useState(false);
 
@@ -342,7 +342,7 @@ const SessionScheduler = ({data, availableSlots}: SessionSchedulerProps) => {
         <FullCalendar
           ref={calendarRef}
           plugins={[dayGridPlugin, timeGridPlugin, listPlugin, interactionPlugin]}
-          initialView="dayGridMonth"
+          initialView="timeGridWeek"
           headerToolbar={false}
           height="100%"
           locale="en-GB"
@@ -384,7 +384,7 @@ const SessionScheduler = ({data, availableSlots}: SessionSchedulerProps) => {
           selectMirror={true}
           select={handleDateSelect}
           editable={false}
-          scrollTime="08:00:00"
+          scrollTime="09:00:00"
           slotDuration="00:15:00"
           slotLabelFormat={{hour: "2-digit", minute: "2-digit", hour12: false}}
           dayMaxEvents={2}

@@ -27,7 +27,7 @@ export default function Calendar({data, availableSlots = [], studentsInfo}: {
 
   // Get initial values from URL params
   const urlView = searchParams.get("view");
-  const initialView = urlView || "month";
+  const initialView = urlView || "week";
   const viewMap: Record<string, string> = {
     month: "dayGridMonth",
     week: "timeGridWeek",
@@ -36,7 +36,7 @@ export default function Calendar({data, availableSlots = [], studentsInfo}: {
     "3days": "timeGrid3Day",
     list: "listWeek",
   };
-  const initialFullCalendarView = viewMap[initialView] || "dayGridMonth";
+  const initialFullCalendarView = viewMap[initialView] || "timeGridWeek";
 
   const [selectedEvent, setSelectedEvent] = useState<
     (SessionData & { studentInfo: StudentInfo | null }) | null
@@ -281,13 +281,14 @@ export default function Calendar({data, availableSlots = [], studentsInfo}: {
           initialView={initialFullCalendarView}
           headerToolbar={false}
           height="100%"
+          locale="en-GB"
           views={{
             timeGridWeek: {
               type: "timeGrid",
               duration: {weeks: 1},
               buttonText: "Week",
               allDaySlot: false,
-              dayHeaderFormat: {weekday: "short"},
+              dayHeaderFormat: {weekday: "short", day: "numeric"},
             },
             timeGrid2Day: {
               type: "timeGrid",
