@@ -3,6 +3,7 @@ import EmailCard from "@/app/(protected)/settings/_components/email-card";
 import PasswordCard from "@/app/(protected)/settings/_components/password-card";
 import TutorProfileCard from "@/app/(protected)/settings/_components/tutor-profile-card";
 import { SettingsNav } from "@/app/(protected)/settings/_components/settings-nav";
+import PreferencesCard from "@/app/(protected)/settings/_components/preferences-card";
 
 const SettingsPage = async ({
   searchParams,
@@ -26,6 +27,7 @@ const SettingsPage = async ({
           {section === "email" && <EmailCard />}
           {section === "password" && <PasswordCard />}
           {section === "tutor-profile" && <TutorProfileCard />}
+          {section === "preferences" && <PreferencesCard />}
         </div>
       </div>
     </div>
