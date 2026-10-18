@@ -10,7 +10,7 @@ import {zodResolver} from "@hookform/resolvers/zod";
 import {z} from "zod";
 import {Form, FormControl, FormField, FormItem, FormLabel, FormDescription, FormMessage} from "@/components/ui/form";
 import {Input} from "@/components/ui/input";
-import {Textarea} from "@/components/ui/textarea";
+import {LocalizedBioInput, localizedBioSchema, EMPTY_LOCALIZED} from "@/components/ui/localized-bio-input";
 import {IconPhone, IconFileText, IconCamera, IconCheck} from "@tabler/icons-react";
 import {useUser} from "@clerk/nextjs";
 import {useRouter} from "next/navigation";
@@ -19,7 +19,7 @@ const MAX_FILE_SIZE_MB = 2;
 
 const activationFormSchema = z.object({
   phone: z.string().optional(),
-  bio: z.string().optional(),
+  bio: localizedBioSchema,
   imageUrl: z.string().optional(),
 });
 
@@ -32,6 +32,9 @@ export function TutorActivationDialog({open, onActivate}: TutorActivationDialogP
   const [isActivating, setIsActivating] = useState(false);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [uploaded, setUploaded] = useState(false);
   const {user} = useUser();
   const router = useRouter();
 
@@ -39,14 +42,14 @@ export function TutorActivationDialog({open, onActivate}: TutorActivationDialogP
     resolver: zodResolver(activationFormSchema),
     defaultValues: {
       phone: "",
-      bio: "",
+      bio: EMPTY_LOCALIZED,
       imageUrl: "",
     },
   });
 
-  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file || !user) return;
+    if (!file) return;
 
     const fileSizeMB = file.size / (1024 * 1024);
 
@@ -57,45 +60,48 @@ export function TutorActivationDialog({open, onActivate}: TutorActivationDialogP
       return;
     }
 
-    try {
-      setIsUploadingImage(true);
-      setUploadedFileName(null);
-
-      await user.setProfileImage({file});
-
-      // Get the updated image URL from the user object
-      const imageUrl = user.imageUrl;
-      form.setValue("imageUrl", imageUrl);
-      setUploadedFileName(file.name);
-
-      toast.success("Avatar updated", {
-        description: "Your profile image has been updated successfully.",
-      });
-    } catch (err) {
-      console.error(err);
-      toast.error("Upload failed", {
-        description: "Something went wrong while uploading your avatar.",
-      });
-    } finally {
-      setIsUploadingImage(false);
-    }
+    // Stage the file for upload on submit, with an instant local preview
+    setPreviewUrl((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return URL.createObjectURL(file);
+    });
+    setSelectedFile(file);
+    setUploadedFileName(file.name);
+    setUploaded(false);
   };
 
   const handleActivate = async (values: z.infer<typeof activationFormSchema>) => {
     setIsActivating(true);
     try {
+      // Upload the staged avatar first, now that the form is submitted
+      let imageUrl = values.imageUrl?.trim() || "";
+      if (selectedFile && user) {
+        setIsUploadingImage(true);
+        try {
+          await user.setProfileImage({file: selectedFile});
+          imageUrl = user.imageUrl;
+          setUploaded(true);
+        } catch (err) {
+          console.error(err);
+          toast.error("Upload failed", {
+            description: "Something went wrong while uploading your avatar.",
+          });
+          return;
+        } finally {
+          setIsUploadingImage(false);
+        }
+      }
+
       const formData = new FormData();
 
       if (values.phone?.trim()) {
         formData.append("phone", values.phone);
       }
 
-      if (values.bio?.trim()) {
-        formData.append("bio", values.bio);
-      }
+      formData.append("bio", JSON.stringify(values.bio));
 
-      if (values.imageUrl?.trim()) {
-        formData.append("imageUrl", values.imageUrl);
+      if (imageUrl) {
+        formData.append("imageUrl", imageUrl);
       }
 
       await onActivate(formData);
@@ -111,7 +117,7 @@ export function TutorActivationDialog({open, onActivate}: TutorActivationDialogP
   return (
     <Dialog open={open} modal={true}>
       <DialogContent
-        className="p-0 gap-0 overflow-hidden border-none shadow-2xl sm:max-w-md"
+        className="p-0 gap-0 overflow-hidden border-none shadow-2xl sm:max-w-xl"
         showCloseButton={false}
         onPointerDownOutside={(e) => {
           e.preventDefault();
@@ -205,17 +211,17 @@ export function TutorActivationDialog({open, onActivate}: TutorActivationDialogP
                     <FormLabel className="flex items-center gap-2">
                       <IconFileText className="h-4 w-4"/>
                       Bio
-                      <span className="text-xs font-normal text-muted-foreground">(optional)</span>
                     </FormLabel>
                     <FormControl>
-                      <Textarea
-                        {...field}
+                      <LocalizedBioInput
+                        value={field.value}
+                        onChange={field.onChange}
                         placeholder="Tell students about your teaching experience and approach..."
-                        className="resize-none overflow-y-auto h-[4.5rem] max-h-[4.5rem] sm:h-[5.5rem] sm:max-h-[5.5rem] [field-sizing:fixed]"
+                        textareaClassName="resize-none overflow-y-auto h-[4.5rem] max-h-[4.5rem] sm:h-[5.5rem] sm:max-h-[5.5rem] [field-sizing:fixed]"
                       />
                     </FormControl>
                     <FormDescription className="text-xs">
-                      Share your teaching philosophy, experience, or specializations.
+                      Share your teaching philosophy, experience, or specializations in each language.
                     </FormDescription>
                     <FormMessage/>
                   </FormItem>
@@ -234,26 +240,44 @@ export function TutorActivationDialog({open, onActivate}: TutorActivationDialogP
                       <span className="text-xs font-normal text-muted-foreground">(optional)</span>
                     </FormLabel>
                     <FormControl>
-                      <div className="space-y-2">
-                        <Input
-                          type="file"
-                          accept="image/*"
-                          disabled={isUploadingImage}
-                          onChange={handleImageChange}
-                          className="h-10 sm:h-12 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100"
-                        />
-                        {isUploadingImage && (
-                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <div
-                              className="w-4 h-4 border-2 border-purple-600/30 border-t-purple-600 rounded-full animate-spin"/>
-                            Uploading image...
+                      <div className="flex w-full items-center gap-3 rounded-md border border-input p-2">
+                        <label
+                          aria-disabled={isUploadingImage || isActivating}
+                          className="inline-flex shrink-0 cursor-pointer items-center gap-2 rounded-md bg-purple-50 px-4 py-2 text-sm font-semibold text-purple-700 transition-colors hover:bg-purple-100 aria-disabled:pointer-events-none aria-disabled:opacity-50"
+                        >
+                          <IconCamera className="h-4 w-4"/>
+                          Choose photo
+                          <input
+                            type="file"
+                            accept="image/*"
+                            disabled={isUploadingImage || isActivating}
+                            onChange={handleImageChange}
+                            className="sr-only"
+                          />
+                        </label>
+
+                        {previewUrl ? (
+                          <div className="flex min-w-0 flex-1 items-center gap-2">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={previewUrl}
+                              alt="Selected photo preview"
+                              className="h-9 w-9 shrink-0 rounded-md object-cover"
+                            />
+                            <span className="truncate text-sm text-muted-foreground">
+                              {uploadedFileName}
+                            </span>
+                            {isUploadingImage ? (
+                              <div
+                                className="ml-auto h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-purple-600/30 border-t-purple-600"/>
+                            ) : uploaded ? (
+                              <IconCheck className="ml-auto h-4 w-4 shrink-0 text-green-600"/>
+                            ) : null}
                           </div>
-                        )}
-                        {uploadedFileName && !isUploadingImage && (
-                          <div className="flex items-center gap-2 text-sm text-green-600">
-                            <IconCheck className="w-4 h-4"/>
-                            {uploadedFileName} uploaded successfully
-                          </div>
+                        ) : (
+                          <span className="truncate text-sm text-muted-foreground">
+                            No file chosen
+                          </span>
                         )}
                       </div>
                     </FormControl>

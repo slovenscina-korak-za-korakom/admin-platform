@@ -12,6 +12,7 @@ import {
   getStudentInfo,
   getUserSchedule,
 } from "@/actions/timeblocks";
+import { getTutorProfile } from "@/actions/admin-actions";
 import {fromZonedTime} from "date-fns-tz";
 
 type SearchParams = {
@@ -111,16 +112,18 @@ export default async function TimeblocksPage({
   const params = await searchParams;
   const isActivated = (await checkTutorActivation(userId)) as boolean;
 
-  const [scheduleResult, regularsResult, cancelledResult, availableSlotsResult, tutorSchedule] = await Promise.all([
+  const [scheduleResult, regularsResult, cancelledResult, availableSlotsResult, tutorSchedule, tutorProfile] = await Promise.all([
     getScheduleData(),
     getAcceptedRegulars(),
     getCancelledSessions(),
     getAvailableSlots(),
     getUserSchedule(),
+    getTutorProfile(),
   ]);
 
   const timeblocksData = (scheduleResult.data || []) as SessionData[];
-  const scheduleData = tutorSchedule.data ?? {id: 0, schedule: [], timezone: Intl.DateTimeFormat().resolvedOptions().timeZone, createdAt: new Date(), updatedAt: new Date()};
+  const tutorTimezone = tutorProfile.data?.timezone ?? "Europe/Ljubljana";
+  const scheduleData = tutorSchedule.data ?? {id: 0, schedule: [], timezone: tutorTimezone, createdAt: new Date(), updatedAt: new Date()};
   const acceptedRegulars = regularsResult.data || [];
   const cancelledSessions = cancelledResult.data || [];
   const recurringEvents = generateRecurringEvents(acceptedRegulars, cancelledSessions);

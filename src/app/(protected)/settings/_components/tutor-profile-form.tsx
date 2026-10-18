@@ -9,8 +9,13 @@ import Skeleton from "react-loading-skeleton";
 import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import {
+  LocalizedBioInput,
+  localizedBioSchema,
+  normalizeLocalized,
+  EMPTY_LOCALIZED,
+} from "@/components/ui/localized-bio-input";
 import {
   Form,
   FormControl,
@@ -30,14 +35,19 @@ const PRESET_COLORS = [
 const formSchema = z.object({
   name: z.string().min(2).max(255),
   phone: z.string().min(1).max(255),
-  bio: z.string().min(1),
+  bio: localizedBioSchema,
   color: z.string().regex(/^#[0-9a-fA-F]{6}$/, "Must be a valid hex color"),
 });
 
 type TutorProfileData = {
   name: string;
   phone: string;
-  bio: string;
+  bio: {
+    en: string;
+    sl: string;
+    ru: string;
+    it: string;
+  };
   color: string;
 } | null;
 
@@ -55,7 +65,7 @@ const TutorProfileForm = ({
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: { name: "", phone: "", bio: "", color: "#6366f1" },
+    defaultValues: { name: "", phone: "", bio: EMPTY_LOCALIZED, color: "#6366f1" },
   });
 
   useEffect(() => {
@@ -63,7 +73,7 @@ const TutorProfileForm = ({
       form.reset({
         name: tutor.name,
         phone: tutor.phone,
-        bio: tutor.bio,
+        bio: normalizeLocalized(tutor.bio),
         color: tutor.color,
       });
     }
@@ -124,7 +134,7 @@ const TutorProfileForm = ({
               <FormLabel>Bio</FormLabel>
               <FormControl>
                 {isLoaded ? (
-                  <Textarea rows={4} {...field} />
+                  <LocalizedBioInput value={field.value} onChange={field.onChange} rows={4} />
                 ) : (
                   <Skeleton height={96} containerClassName="w-full block leading-none" />
                 )}

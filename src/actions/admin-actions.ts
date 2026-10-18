@@ -120,10 +120,27 @@ export const updateTutorAvatar = async (imageUrl: string) => {
   }
 };
 
+export const updateTutorTimezone = async (timezone: string) => {
+  const {userId} = await auth();
+  if (!userId) return {message: "Unauthorized", status: 401};
+  try {
+    await db.update(tutorsTable).set({timezone}).where(eq(tutorsTable.clerkId, userId));
+    return {message: "Timezone updated", status: 200};
+  } catch (error) {
+    console.error(error);
+    return {message: "Error updating timezone", status: 500};
+  }
+};
+
 export const updateTutorProfile = async (values: {
   name: string;
   phone: string;
-  bio: string;
+  bio: {
+    sl: string;
+    en: string;
+    ru: string;
+    it: string;
+  };
   color: string;
 }) => {
   const {userId} = await auth();
@@ -205,8 +222,12 @@ export const activateTutorAccount = async (formData: FormData) => {
   try {
     // Extract form fields
     const phone = formData.get("phone") as string | null;
-    const bio = formData.get("bio") as string | null;
+    const bioRaw = formData.get("bio") as string | null;
     const imageUrl = formData.get("imageUrl") as string | null;
+
+    // Bio is a localized object: { sl, ru, en, it }
+    const emptyBio = {sl: "", ru: "", en: "", it: ""};
+    const bio = bioRaw ? {...emptyBio, ...JSON.parse(bioRaw)} : emptyBio;
 
     // Use provided image URL or fallback to Clerk's default
     const avatarUrl = imageUrl || userData.imageUrl || "";
@@ -217,7 +238,7 @@ export const activateTutorAccount = async (formData: FormData) => {
       email: userData.emailAddresses[0].emailAddress,
       avatar: avatarUrl,
       phone: phone?.trim() || "-",
-      bio: bio?.trim() || "-",
+      bio: bio,
       color: "#6366f1",
       clerkId: userId,
     });

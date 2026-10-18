@@ -4,12 +4,13 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { getTutorProfile } from "@/actions/admin-actions";
+import type { Localized } from "@/components/ui/localized-bio-input";
 import TutorProfileForm from "./tutor-profile-form";
 
 type TutorProfile = {
   name: string;
   phone: string;
-  bio: string;
+  bio: Localized;
   color: string;
 } | null;
 
