@@ -5,7 +5,7 @@ import {
   EmailCodeFactor,
   SessionVerificationLevel,
   SessionVerificationResource,
-} from "@clerk/types";
+} from "@clerk/shared/types";
 import { Button } from "@/components/ui/button";
 import {
   InputOTP,
