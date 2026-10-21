@@ -38,6 +38,7 @@ import {
 import AddEventDialog from "./add-event-dialog";
 import { useRouter } from "next/navigation";
 import { createColumns, Event } from "./columns";
+import { usePreferredTimezone } from "@/lib/use-preferred-timezone";
 
 interface DataTableProps {
   data: Event[];
@@ -51,8 +52,9 @@ export function DataTable({ data, filteredEvents }: DataTableProps) {
   const [rowSelection, setRowSelection] = useState({});
   const [showAllEvents, setShowAllEvents] = useState(false);
   const router = useRouter();
+  const timezone = usePreferredTimezone();
 
-  const columns = createColumns(router);
+  const columns = createColumns(router, timezone);
 
   const table = useReactTable({
     data: showAllEvents ? data : filteredEvents,
@@ -119,7 +121,7 @@ export function DataTable({ data, filteredEvents }: DataTableProps) {
                       className="capitalize"
                       checked={column.getIsVisible()}
                       onCheckedChange={(value) =>
-                        column.toggleVisibility(!!value)
+                        column.toggleVisibility(value as boolean)
                       }
                     >
                       {column.id}

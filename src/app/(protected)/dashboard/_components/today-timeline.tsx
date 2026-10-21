@@ -3,6 +3,8 @@ import {IconCalendarEvent, IconChartBar, IconClock} from "@tabler/icons-react";
 import {formatDuration} from "./tutor-dashboard";
 import {TodaySessions} from "@/actions/admin-actions";
 import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar";
+import {formatTimezone} from "@/components/ui/timezone-flag";
+import {formatInTimeZone} from "date-fns-tz";
 
 const SESSION_TYPE_COLORS: Record<string, string> = {
   individual: "#6366f1",
@@ -10,7 +12,7 @@ const SESSION_TYPE_COLORS: Record<string, string> = {
   regular: "#10b981",
 };
 
-export const TodayTimeline = async ({data}: { data: TodaySessions[] }) => {
+export const TodayTimeline = async ({data, timezone}: { data: TodaySessions[]; timezone: string }) => {
   const confirmedCount = data.filter((s) => s.status !== "cancelled").length;
   const totalMinutes = data.filter((s) => s.status !== "cancelled").reduce((sum, s) => sum + s.duration, 0);
 
@@ -60,11 +62,7 @@ export const TodayTimeline = async ({data}: { data: TodaySessions[] }) => {
                 >
                   {/* Time */}
                   <span className="w-10 shrink-0 text-right text-xs font-mono font-medium text-muted-foreground">
-                  {session.startTime.toLocaleTimeString('default', {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    hour12: false
-                  })}
+                  {formatInTimeZone(session.startTime, timezone, "HH:mm")}
                 </span>
 
                   {/* Dot */}
@@ -86,11 +84,18 @@ export const TodayTimeline = async ({data}: { data: TodaySessions[] }) => {
                           {session.studentName.split(' ')[1]?.[0]}
                         </AvatarFallback>
                       </Avatar>
-                      <span
-                        className={`text-sm capitalize font-medium truncate ${isCancelled ? "line-through text-muted-foreground" : ""}`}
-                      >
-                      {session.studentName}
-                    </span>
+                      <div className="min-w-0 flex flex-col">
+                        <span
+                          className={`text-sm capitalize font-medium truncate ${isCancelled ? "line-through text-muted-foreground" : ""}`}
+                        >
+                          {session.studentName}
+                        </span>
+                        {session.studentTimezone && session.studentTimezone !== timezone && (
+                          <span className="text-[11px] text-muted-foreground inline-flex items-center gap-1 truncate">
+                            {formatTimezone(session.studentTimezone)} · {formatInTimeZone(session.startTime, session.studentTimezone, "HH:mm")}
+                          </span>
+                        )}
+                      </div>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
                       <span className="text-xs text-muted-foreground">{formatDuration(session.duration)}</span>

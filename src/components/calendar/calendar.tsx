@@ -9,6 +9,7 @@ import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import listPlugin from "@fullcalendar/list";
 import interactionPlugin from "@fullcalendar/interaction";
+import luxonPlugin from "@fullcalendar/luxon3";
 import {AvailableSlotData, EventClickArg, SessionData, StudentInfo} from "@/components/calendar/types";
 import {CalendarControls} from "@/components/calendar/calendar-controls";
 import {EventSheet} from "@/components/calendar/event-sheet";
@@ -16,6 +17,8 @@ import "@/components/calendar/calendar-styles.css";
 import {getStatusColor} from "./calendar-functions";
 import {deleteAvailableSlot} from "@/actions/timeblocks";
 import {getEvents} from "@/lib/calendar-functions";
+import {usePreferredTimezone} from "@/lib/use-preferred-timezone";
+import {formatInTimeZone} from "date-fns-tz";
 
 export default function Calendar({data, availableSlots = [], studentsInfo}: {
   data: SessionData[];
@@ -52,6 +55,7 @@ export default function Calendar({data, availableSlots = [], studentsInfo}: {
   const [selectedSlotId, setSelectedSlotId] = useState<number | null>(null);
   const calendarRef = useRef<FullCalendar>(null);
   const containerRef = useCalendarResize(calendarRef);
+  const timezone = usePreferredTimezone();
 
   const events = getEvents(data, availableSlots, studentsInfo);
 
@@ -277,7 +281,9 @@ export default function Calendar({data, availableSlots = [], studentsInfo}: {
             timeGridPlugin,
             listPlugin,
             interactionPlugin,
+            luxonPlugin,
           ]}
+          timeZone={timezone}
           initialView={initialFullCalendarView}
           headerToolbar={false}
           height="100%"
@@ -369,9 +375,9 @@ export default function Calendar({data, availableSlots = [], studentsInfo}: {
           eventContent={(eventInfo: any) => {
             const isAvailable = eventInfo.event.extendedProps?.isAvailable as boolean;
             const start = new Date(eventInfo.event.start);
-            const end = new Date(eventInfo.event.end);
-            const pad = (n: number) => n.toString().padStart(2, "0");
-            const timeString = `${pad(start.getHours())}:${pad(start.getMinutes())} – ${pad(end.getHours())}:${pad(end.getMinutes())}`;
+            // Format the start/end in the tutor's preferred timezone (the true
+            // instant), not browser-local, so labels match the grid position.
+            const timeString = `${formatInTimeZone(eventInfo.event.start, timezone, "HH:mm")} – ${formatInTimeZone(eventInfo.event.end, timezone, "HH:mm")}`;
             const location = eventInfo.event.extendedProps?.location as string;
             const locationLabel = location === "online" ? "Online" : "Classroom";
 

@@ -1,22 +1,15 @@
 import {IconAlertTriangle, IconCalendar, IconClock} from "@tabler/icons-react";
 import {Badge} from "@/components/ui/badge";
 import {AllCancelledSessions} from "@/actions/admin-actions";
+import {formatInTimeZone} from "date-fns-tz";
 
-const formatDate = (date: Date) =>
-  date.toLocaleDateString('en-GB', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  });
+const formatDate = (date: Date, tz: string) =>
+  formatInTimeZone(date, tz, "d MMM yyyy");
 
-const formatTime = (date: Date) =>
-  date.toLocaleTimeString('en-GB', {
-    hour: 'numeric',
-    minute: '2-digit',
-    hour12: false,
-  });
+const formatTime = (date: Date, tz: string) =>
+  formatInTimeZone(date, tz, "H:mm");
 
-export const CancellationAlerts = ({data}: {data: AllCancelledSessions[]}) => {
+export const CancellationAlerts = ({data, timezone}: {data: AllCancelledSessions[]; timezone: string}) => {
   if (data.length === 0) return null;
 
   const sorted = [...data].sort((a, b) => a.startTime.getTime() - b.startTime.getTime());
@@ -42,13 +35,13 @@ export const CancellationAlerts = ({data}: {data: AllCancelledSessions[]}) => {
             </Badge>
             <span className="flex items-center gap-1 text-xs text-orange-800/80 dark:text-orange-300/80">
               <IconCalendar className="h-3 w-3 shrink-0" />
-              <span className="font-medium">{formatDate(alert.startTime)}</span>
+              <span className="font-medium">{formatDate(alert.startTime, timezone)}</span>
               <span className="text-orange-600/60">·</span>
-              <span>{formatTime(alert.startTime)}</span>
+              <span>{formatTime(alert.startTime, timezone)}</span>
             </span>
             <span className="flex items-center gap-1 text-xs text-orange-600/60 dark:text-orange-400/50">
               <IconClock className="h-3 w-3 shrink-0" />
-              <span>cancelled {formatDate(alert.cancelledAt)}</span>
+              <span>cancelled {formatDate(alert.cancelledAt, timezone)}</span>
             </span>
             {alert.reason && (
               <span className="w-full text-xs text-orange-700/70 dark:text-orange-400/70 italic truncate">

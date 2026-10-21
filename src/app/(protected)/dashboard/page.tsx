@@ -1,4 +1,4 @@
-import { isAdmin} from "@/actions/admin-actions";
+import { isAdmin, getPreferredTimezone} from "@/actions/admin-actions";
 import {TutorDashboard} from "@/app/(protected)/dashboard/_components/tutor-dashboard";
 import {TimezoneSync} from "@/app/(protected)/dashboard/_components/timezone-sync";
 import {Suspense} from "react";
@@ -10,9 +10,11 @@ export default async function DashboardPage({
 }: {
   searchParams: Promise<{ filter?: string; tz?: string }>;
 }) {
-  const isUserAdmin = await isAdmin();
+  const [isUserAdmin, preferredTz] = await Promise.all([isAdmin(), getPreferredTimezone()]);
   const {filter, tz} = await searchParams;
-  const timezone = tz ?? "UTC";
+  // Preferred timezone wins; fall back to the browser tz (synced into ?tz= by
+  // TimezoneSync) and finally UTC.
+  const timezone = preferredTz ?? tz ?? "UTC";
 
   if (isUserAdmin) return (
     <AdminTabs filter={filter} timezone={timezone} />

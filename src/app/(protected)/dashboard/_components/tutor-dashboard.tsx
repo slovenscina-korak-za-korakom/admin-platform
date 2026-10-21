@@ -102,11 +102,11 @@ export const TutorDashboard = async ({timezone}: { timezone: string }) => {
       </div>
 
       {/* Cancellation Alerts */}
-      {cancelledSessions.data.length > 0 && <CancellationAlerts data={cancelledSessions.data}/>}
+      {cancelledSessions.data.length > 0 && <CancellationAlerts data={cancelledSessions.data} timezone={timezone}/>}
 
       {/* Main content: Today's timeline + regular clients */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <TodayTimeline data={todaysSessions.data}/>
+        <TodayTimeline data={todaysSessions.data} timezone={timezone}/>
         <RegularClientsCard data={allRegularSessions.data} sessionCounts={regularStudents}/>
       </div>
     </div>

@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useMemo } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -32,6 +32,7 @@ import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { formatInTimeZone } from "date-fns-tz";
+import { usePreferredTimezone } from "@/lib/use-preferred-timezone";
 import { Booking } from "../booking/_components/bookings";
 
 export const eventSchema = z.object({
@@ -58,10 +59,7 @@ const AddEventForm = ({
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
-  const timezone = useMemo(
-    () => Intl.DateTimeFormat().resolvedOptions().timeZone,
-    [],
-  );
+  const timezone = usePreferredTimezone();
 
   const form = useForm<z.infer<typeof eventSchema>>({
     resolver: zodResolver(eventSchema),
@@ -83,6 +81,12 @@ const AddEventForm = ({
       timezone,
     },
   });
+
+  // defaultValues capture the initial (browser) timezone; keep the field in
+  // sync once the stored preference resolves.
+  useEffect(() => {
+    form.setValue("timezone", timezone);
+  }, [timezone, form]);
 
   const theme = form.watch("theme");
   const tutor = form.watch("tutor");

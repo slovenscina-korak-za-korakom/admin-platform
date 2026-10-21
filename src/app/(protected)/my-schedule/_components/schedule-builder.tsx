@@ -19,6 +19,8 @@ import "@/components/calendar/calendar-styles.css";
 import {useCalendarResize} from "@/hooks/use-calendar-resize";
 import {Badge} from "@/components/ui/badge";
 import {formatTimezone} from "@/components/ui/timezone-flag";
+import {usePreferredTimezone} from "@/lib/use-preferred-timezone";
+import {convertWeeklyWallClock} from "@/lib/schedule-time";
 
 interface TimeSlot {
   id: string;
@@ -89,9 +91,8 @@ const ScheduleBuilder = ({schedule, studentsInfo}: { schedule: ScheduleData; stu
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [timezone, setTimezone] = useState<string>(
-    () => Intl.DateTimeFormat().resolvedOptions().timeZone
-  );
+  const preferredTimezone = usePreferredTimezone();
+  const [timezone, setTimezone] = useState<string>(preferredTimezone);
   const [originalEvents, setOriginalEvents] = useState<CalendarEvent[] | null>(null);
   const [scheduleDiff, setScheduleDiff] = useState<SlotDiff | null>(null);
   const [confirmedRemovals, setConfirmedRemovals] = useState<Set<string>>(new Set());
@@ -130,10 +131,23 @@ const ScheduleBuilder = ({schedule, studentsInfo}: { schedule: ScheduleData; stu
     const loadData = async () => {
       setIsLoading(true);
       try {
-        const loadedEvents = convertDaySchedulesToEvents(schedule);
+        // The schedule is stored as wall-clock times in the timezone it was
+        // authored in. Re-express every slot in the tutor's preferred timezone
+        // so the grid, the badge, and what we save all agree — slots keep their
+        // real-world moment and simply shift to the equivalent local time.
+        const sourceTz = schedule.timezone || preferredTimezone;
+        const loadedEvents = convertDaySchedulesToEvents(schedule).map((event) => {
+          const {dayOfWeek, startTime} = convertWeeklyWallClock(
+            event.dayOfWeek,
+            event.startTime,
+            sourceTz,
+            preferredTimezone,
+          );
+          return {...event, dayOfWeek, startTime};
+        });
         setEvents(loadedEvents);
         setOriginalEvents(loadedEvents);
-        setTimezone(schedule.timezone);
+        setTimezone(preferredTimezone);
       } catch (error) {
         console.error("Error loading data:", error);
         toast.error("Failed to load schedule");
@@ -143,7 +157,7 @@ const ScheduleBuilder = ({schedule, studentsInfo}: { schedule: ScheduleData; stu
     };
 
     loadData();
-  }, [convertDaySchedulesToEvents, schedule]);
+  }, [convertDaySchedulesToEvents, schedule, preferredTimezone]);
 
   const daysOfWeek = [
     {value: 1, label: "Monday", short: "Mon"},

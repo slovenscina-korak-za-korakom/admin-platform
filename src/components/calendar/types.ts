@@ -64,4 +64,5 @@ export interface StudentInfo {
   image: string;
   languageLevel?: string | null;
   preferences?: StudentPreferences | null;
+  timezone?: string | null;
 }

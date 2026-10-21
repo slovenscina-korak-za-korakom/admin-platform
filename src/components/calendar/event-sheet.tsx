@@ -20,18 +20,19 @@ import {useRouter} from "next/navigation";
 import {getSessionColor, hexToRgba} from "@/lib/session-colors";
 import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar";
 import {Button} from "@/components/ui/button";
+import {usePreferredTimezone} from "@/lib/use-preferred-timezone";
+import {formatTimezone} from "@/components/ui/timezone-flag";
+import {formatInTimeZone} from "date-fns-tz";
 import Link from "next/link";
 
-const DAYS_OF_WEEK = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+const fmt24 = (d: Date, tz: string) =>
+  formatInTimeZone(d, tz, "HH:mm");
 
-const fmt24 = (d: Date) =>
-  `${d.getHours().toString().padStart(2, "0")}:${d.getMinutes().toString().padStart(2, "0")}`;
+const fmtDateFull = (d: Date, tz: string) =>
+  formatInTimeZone(d, tz, "EEEE, d MMMM yyyy");
 
-const fmtDateFull = (d: Date) =>
-  d.toLocaleDateString("en-GB", {weekday: "long", day: "numeric", month: "long", year: "numeric"});
-
-const fmtToday = (d: Date = new Date()) =>
-  d.toLocaleDateString("en-GB", {weekday: "short", day: "numeric", month: "short", year: "numeric"});
+const fmtToday = (d: Date, tz: string) =>
+  formatInTimeZone(d, tz, "EEE, d MMM yyyy");
 
 const fmtDuration = (min: number) => {
   const h = Math.floor(min / 60), m = min % 60;
@@ -69,6 +70,7 @@ export const EventSheet = ({
   const [deletingSlot, setDeletingSlot] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
   const router = useRouter();
+  const timezone = usePreferredTimezone();
 
   const student = event?.studentInfo ?? null;
   const isAvailableSlot = event?.status === "available";
@@ -188,7 +190,7 @@ export const EventSheet = ({
                 <div className="flex flex-1 items-center gap-2 bg-white/12 rounded-lg px-3 py-2">
                   <IconCalendar className="h-3.5 w-3.5 text-white/70"/>
                   <span className="text-white text-sm font-semibold truncate">
-                    {startTime ? fmtToday(startTime) : "—"}
+                    {startTime ? fmtToday(startTime, timezone) : "—"}
                   </span>
                 </div>
                 <div className="flex flex-1 items-center gap-2 bg-white/12 rounded-lg px-3 py-2">
@@ -281,13 +283,13 @@ export const EventSheet = ({
                   {/* Time display */}
                   <div className="flex items-baseline gap-2">
                     <span className="text-3xl font-medium tabular-nums tracking-wider text-foreground">
-                      {fmt24(startTime)}
+                      {fmt24(startTime, timezone)}
                     </span>
                     {endTime && (
                       <>
                         <span className="text-xl text-muted-foreground/50 font-light">–</span>
                         <span className="text-3xl font-medium tabular-nums tracking-wider text-foreground">
-                          {fmt24(endTime)}
+                          {fmt24(endTime, timezone)}
                         </span>
                       </>
                     )}
@@ -295,11 +297,25 @@ export const EventSheet = ({
 
                   {/* Date + duration */}
                   <div className="inline-flex items-center gap-2 justify-between w-full">
-                    <p className="text-sm font-medium text-foreground">{fmtDateFull(startTime)}</p>
+                    <p className="text-sm font-medium text-foreground">{fmtDateFull(startTime, timezone)}</p>
                     {event && (
                       <p className="text-xs text-muted-foreground mt-0.5">{fmtDuration(event.duration)}</p>
                     )}
                   </div>
+
+                  {/* Client's local time — shown only when it differs from yours */}
+                  {student?.timezone && student.timezone !== timezone && (
+                    <div className="pt-2 mt-1 border-t border-border/40 flex items-center justify-between gap-2">
+                      <span className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
+                        {student.name?.split(" ")[0] ?? "Client"}&apos;s time
+                      </span>
+                      <span className="text-sm font-medium tabular-nums text-foreground/80 inline-flex items-center gap-1.5">
+                        {fmt24(startTime, student.timezone)}
+                        {endTime && <>–{fmt24(endTime, student.timezone)}</>}
+                        <span className="text-[11px] text-muted-foreground">{formatTimezone(student.timezone)}</span>
+                      </span>
+                    </div>
+                  )}
 
                 </div>
               ) : (
@@ -438,12 +454,8 @@ export const EventSheet = ({
             onOpenChange={setRemoveDialogOpen}
             invitationId={event.invitationId}
             studentName={student?.name || null}
-            dayOfWeek={DAYS_OF_WEEK[new Date(event.startTime).getDay()]}
-            startTime={new Date(event.startTime).toLocaleTimeString("default", {
-              hour: "numeric",
-              minute: "2-digit",
-              hour12: true,
-            })}
+            dayOfWeek={formatInTimeZone(new Date(event.startTime), timezone, "EEEE")}
+            startTime={formatInTimeZone(new Date(event.startTime), timezone, "h:mm a")}
           />
         </>
       )}

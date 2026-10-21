@@ -18,6 +18,7 @@ export interface TodaySessions {
   type: string;
   duration: number;
   status: string;
+  studentTimezone?: string | null;
 }
 
 export interface AllCancelledSessions {
@@ -51,6 +52,7 @@ export interface RegularSessionsWithName {
   confirmedAt: Date | null;
   studentName: string;
   studentAvatar: string;
+  studentTimezone?: string | null;
 }
 
 export interface RegularSession {
@@ -100,6 +102,27 @@ export const getTutorProfile = async () => {
   } catch (error) {
     console.error(error);
     return {message: "Error fetching tutor profile", status: 500, data: null};
+  }
+};
+
+/**
+ * Returns the current tutor's preferred IANA timezone (set in Settings), or
+ * null when none has been chosen. Callers fall back to the browser timezone
+ * (client) or UTC (server) when this is null.
+ */
+export const getPreferredTimezone = async (): Promise<string | null> => {
+  const {userId} = await auth();
+  if (!userId) return null;
+  try {
+    const [tutor] = await db
+      .select({timezone: tutorsTable.timezone})
+      .from(tutorsTable)
+      .where(eq(tutorsTable.clerkId, userId))
+      .limit(1);
+    return tutor?.timezone ?? null;
+  } catch (error) {
+    console.error(error);
+    return null;
   }
 };
 
@@ -336,9 +359,17 @@ export const getDailySessionStats = async (date: Date | undefined) => {
   }
 
   try {
+    // Group sessions by calendar day in the admin's preferred timezone so the
+    // daily buckets line up with what they see elsewhere in the app.
+    // GROUP BY / ORDER BY reference the date column by its ordinal position (1)
+    // rather than repeating the expression: the timezone is a bind parameter,
+    // and Postgres treats a repeated `AT TIME ZONE $n` as distinct placeholders,
+    // which would break the grouping-equality check.
+    const tz = (await getPreferredTimezone()) ?? "UTC";
+    const dateExpr = sql<string>`TO_CHAR(${timeblocksTable.startTime} AT TIME ZONE ${tz}, 'YYYY-MM-DD')`;
     const results = await db
       .select({
-        date: sql<string>`TO_CHAR(${timeblocksTable.startTime} AT TIME ZONE 'UTC', 'YYYY-MM-DD')`,
+        date: dateExpr,
         tutorId: tutorsTable.id,
         tutorName: tutorsTable.name,
         tutorColor: tutorsTable.color,
@@ -353,12 +384,12 @@ export const getDailySessionStats = async (date: Date | undefined) => {
       ))
       .innerJoin(tutorsTable, eq(tutorsTable.id, timeblocksTable.tutorId))
       .groupBy(
-        sql`TO_CHAR(${timeblocksTable.startTime} AT TIME ZONE 'UTC', 'YYYY-MM-DD')`,
+        sql.raw("1"),
         tutorsTable.id,
         tutorsTable.name,
         tutorsTable.color,
       )
-      .orderBy(asc(sql`TO_CHAR(${timeblocksTable.startTime} AT TIME ZONE 'UTC', 'YYYY-MM-DD')`));
+      .orderBy(asc(sql.raw("1")));
 
     const data = results.map(r => ({...r, totalMinutes: Number(r.totalMinutes) || 0}));
     return {message: "Success", status: 200, data: data as DailySessionStat[]};
@@ -450,6 +481,7 @@ export const getAllRegularSessions = async () => {
       ...s,
       studentName: s.studentId ? (userMap.get(s.studentId)?.name ?? "Unknown") : "Unknown",
       studentAvatar: s.studentId ? (userMap.get(s.studentId)?.avatar ?? "") : "",
+      studentTimezone: s.studentId ? (userMap.get(s.studentId)?.timezone ?? null) : null,
     }));
 
     return {
@@ -469,10 +501,14 @@ export const getAllRegularSessions = async () => {
 }
 
 
-export const getUserInfo = async (studentIds: string[]): Promise<Map<string, { name: string; avatar: string }>> => {
+export const getUserInfo = async (studentIds: string[]): Promise<Map<string, { name: string; avatar: string; timezone: string | null }>> => {
   const client = await clerkClient();
   const {data: users} = await client.users.getUserList({userId: studentIds});
-  return new Map(users.map(u => [u.id, {name: u.fullName ?? "Unknown", avatar: u.imageUrl}]));
+  return new Map(users.map(u => [u.id, {
+    name: u.fullName ?? "Unknown",
+    avatar: u.imageUrl,
+    timezone: (u.publicMetadata?.timezone as string | undefined) ?? null,
+  }]));
 }
 
 export const getTodaySessions = async (timezone: string = "UTC") => {
@@ -538,6 +574,7 @@ export const getTodaySessions = async (timezone: string = "UTC") => {
       ...s,
       studentName: userMap.get(s.studentId)?.name ?? "Unknown",
       studentAvatar: userMap.get(s.studentId)?.avatar ?? "",
+      studentTimezone: userMap.get(s.studentId)?.timezone ?? null,
     }));
 
     const regularData = regularSessions.map(s => {
@@ -552,6 +589,7 @@ export const getTodaySessions = async (timezone: string = "UTC") => {
         studentId: s.studentId ?? "",
         studentName: s.studentId ? (userMap.get(s.studentId)?.name ?? "Unknown") : "Unknown",
         studentAvatar: s.studentId ? (userMap.get(s.studentId)?.avatar ?? "") : "",
+        studentTimezone: s.studentId ? (userMap.get(s.studentId)?.timezone ?? null) : null,
         startTime: startTimeUtc,
         type: "regular",
         duration: s.duration,

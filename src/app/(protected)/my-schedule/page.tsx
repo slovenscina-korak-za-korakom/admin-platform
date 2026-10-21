@@ -122,7 +122,9 @@ export default async function TimeblocksPage({
   ]);
 
   const timeblocksData = (scheduleResult.data || []) as SessionData[];
-  const tutorTimezone = tutorProfile.data?.timezone ?? "Europe/Ljubljana";
+  // Empty when no preference is stored; the schedule builder then falls back to
+  // the browser timezone client-side.
+  const tutorTimezone = tutorProfile.data?.timezone ?? "";
   const scheduleData = tutorSchedule.data ?? {id: 0, schedule: [], timezone: tutorTimezone, createdAt: new Date(), updatedAt: new Date()};
   const acceptedRegulars = regularsResult.data || [];
   const cancelledSessions = cancelledResult.data || [];

@@ -20,6 +20,7 @@ import {
   IconWorldPin,
 } from "@tabler/icons-react";
 import { toZonedTime } from "date-fns-tz";
+import { usePreferredTimezone } from "@/lib/use-preferred-timezone";
 import {
   Dialog,
   DialogContent,
@@ -56,6 +57,7 @@ const Bookings = () => {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [booking, setBooking] = useState<Booking | null>(null);
   const [loading, setLoading] = useState(true);
+  const timezone = usePreferredTimezone();
 
   useEffect(() => {
     if (!bookingId) {
@@ -207,7 +209,7 @@ const Bookings = () => {
                 <span>
                   {toZonedTime(
                     booking.date,
-                    "Europe/Ljubljana"
+                    timezone
                   ).toLocaleDateString("sl-SI", {
                     year: "numeric",
                     month: "long",
@@ -268,7 +270,7 @@ const Bookings = () => {
                     <IconCalendar className="w-3.5 h-3.5" />
                     {toZonedTime(
                       new Date(booking.date),
-                      "Europe/Ljubljana"
+                      timezone
                     ).toLocaleDateString("sl-SI", {
                       year: "numeric",
                       month: "long",

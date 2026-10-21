@@ -19,6 +19,7 @@ import { toast } from "sonner";
 import { deleteEvent } from "@/actions/language-club";
 import { IconCalendarEvent, IconEdit, IconTrash } from "@tabler/icons-react";
 import { useEditDialog } from "./edit-dialog-context";
+import { formatInTimeZone } from "date-fns-tz";
 import Link from "next/link";
 
 const handleDeleteEvent = async (id: number, router: any) => {
@@ -35,7 +36,7 @@ const handleDeleteEvent = async (id: number, router: any) => {
 // You can use a Zod schema here if you want.
 export type Event = typeof langClubTable.$inferSelect;
 
-export const createColumns = (router: any): ColumnDef<Event>[] => [
+export const createColumns = (router: any, timezone: string = "UTC"): ColumnDef<Event>[] => [
   {
     id: "select",
     header: ({ table }) => (
@@ -92,13 +93,7 @@ export const createColumns = (router: any): ColumnDef<Event>[] => [
     },
     cell: ({ row }) => {
       const date = row.getValue("date") as Date;
-      const formatted = new Date(date).toLocaleString("en-GB", {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-      });
+      const formatted = formatInTimeZone(new Date(date), timezone, "d MMMM yyyy, HH:mm");
       return <div className="text-left font-medium">{formatted}</div>;
     },
   },

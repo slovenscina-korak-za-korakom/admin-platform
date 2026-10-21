@@ -14,6 +14,8 @@ import {Textarea} from "@/components/ui/textarea";
 import {cancelRegularSession} from "@/actions/timeblocks";
 import {useRouter} from "next/navigation";
 import {IconLoader2} from "@tabler/icons-react";
+import {usePreferredTimezone} from "@/lib/use-preferred-timezone";
+import {formatInTimeZone} from "date-fns-tz";
 
 interface CancelSessionDialogProps {
   open: boolean;
@@ -33,13 +35,9 @@ export function CancelSessionDialog({
   const [reason, setReason] = useState("");
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
+  const timezone = usePreferredTimezone();
 
-  const formattedDate = sessionDate.toLocaleDateString("en-US", {
-    weekday: "long",
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
+  const formattedDate = formatInTimeZone(sessionDate, timezone, "EEEE, MMMM d, yyyy");
 
   const handleCancel = () => {
     startTransition(async () => {

@@ -7,6 +7,9 @@ import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar";
 import {RegularSessionsWithName} from "@/actions/admin-actions";
 import {Badge} from "@/components/ui/badge";
 import {getDstChangeInfo} from "@/app/(protected)/my-schedule/_components/schedule-confirm-dialog";
+import {usePreferredTimezone} from "@/lib/use-preferred-timezone";
+import {convertWeeklyWallClock} from "@/lib/schedule-time";
+import {formatTimezone} from "@/components/ui/timezone-flag";
 
 export const RegularClientsCard = ({
   data,
@@ -16,6 +19,7 @@ export const RegularClientsCard = ({
   sessionCounts: Map<string, { name: string; count: number }>;
 }) => {
 
+  const tutorTz = usePreferredTimezone();
   const dstInfo = getDstChangeInfo();
   const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
@@ -54,7 +58,18 @@ export const RegularClientsCard = ({
             <p
               className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-2">{dayNames[dayNum]}</p>
             <div className="space-y-1.5">
-              {byDay[dayNum].map((client) => (
+              {byDay[dayNum].map((client) => {
+                // Stored wall-clock is expressed in the invitation's zone; show
+                // it in the tutor's preferred zone, and the client's zone too
+                // when it differs.
+                const sourceTz = client.timezone || tutorTz;
+                const clientTz = client.studentTimezone ?? null;
+                const tutorLocal = convertWeeklyWallClock(client.dayOfWeek, client.startTime, sourceTz, tutorTz);
+                const showClient = !!clientTz && clientTz !== tutorTz;
+                const clientLocal = showClient
+                  ? convertWeeklyWallClock(client.dayOfWeek, client.startTime, sourceTz, clientTz)
+                  : null;
+                return (
                 <div
                   key={client.id}
                   className="flex items-center gap-3 rounded-xl px-3 py-2 hover:bg-muted/40 transition-colors group"
@@ -75,11 +90,14 @@ export const RegularClientsCard = ({
                       {sessionCounts.get(client.studentId)?.count ?? 1}×/wk
                     </span>
                   )}
-                  <span className="text-xs text-muted-foreground font-mono">
-                    {client.startTime}
-                    {client.timezone && (
-                      <span className="ml-1 text-[10px] opacity-60">
-                        {client.timezone.split("/").pop()?.replace(/_/g, " ")}
+                  <span className="text-xs text-muted-foreground font-mono text-right leading-tight">
+                    <span className="inline-flex items-center gap-1 justify-end">
+                      {tutorLocal.startTime}
+                      <span className="text-[10px] opacity-60">{formatTimezone(tutorTz)}</span>
+                    </span>
+                    {showClient && clientLocal && (
+                      <span className="block text-[10px] text-muted-foreground/70">
+                        {clientLocal.startTime} {formatTimezone(clientTz!)}
                       </span>
                     )}
                   </span>
@@ -98,7 +116,8 @@ export const RegularClientsCard = ({
                     )}
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         ))}

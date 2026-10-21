@@ -12,8 +12,8 @@ import {
 } from "@/db/schema";
 import {auth, clerkClient} from "@clerk/nextjs/server";
 import {and, desc, eq} from "drizzle-orm";
-import {fromZonedTime} from "date-fns-tz";
 import {randomUUID} from "crypto";
+import {wallClockToUtc} from "@/lib/schedule-time";
 import {resend} from "@/lib/resend";
 import {InvitationEmail} from "@/emails/invitation-email";
 import {SessionCancelledEmail} from "@/emails/session-cancelled-email";
@@ -245,6 +245,7 @@ export const getStudentInfo = async (studentId: string) => {
       image: user.imageUrl,
       languageLevel: meta?.preferences?.languageLevel ?? null,
       preferences: meta?.preferences ?? null,
+      timezone: (user.publicMetadata?.timezone as string | undefined) ?? null,
     },
     status: 200,
   };
@@ -642,14 +643,10 @@ export const createOneTimeSession = async (data: {
       "Student";
 
     // 3. Build startTime Date — convert from tutor's local timezone to UTC
-    const [year, month, day] = data.date.split("-").map(Number);
-    const [h, m] = data.startTime.split(":").map(Number);
-    const startDateTime = fromZonedTime(
-      new Date(year, month - 1, day, h, m, 0, 0),
-      data.timezone
-    );
+    const startDateTime = wallClockToUtc(data.date, data.startTime, data.timezone);
 
     // 4. Compute end time string for email
+    const [h, m] = data.startTime.split(":").map(Number);
     const totalMinutes = h * 60 + m + data.duration;
     const endTime =
       `${Math.floor(totalMinutes / 60) % 24}`.padStart(2, "0") +
@@ -759,12 +756,7 @@ export const createAvailableSlot = async (data: {
 
     if (tutors.length === 0) return {message: "Tutor not found", status: 404};
 
-    const [year, month, day] = data.date.split("-").map(Number);
-    const [h, m] = data.startTime.split(":").map(Number);
-    const startDateTime = fromZonedTime(
-      new Date(year, month - 1, day, h, m, 0, 0),
-      data.timezone
-    );
+    const startDateTime = wallClockToUtc(data.date, data.startTime, data.timezone);
 
     await db.insert(availableSlotsTable).values({
       tutorId: tutors[0].id,

@@ -8,7 +8,9 @@ import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import listPlugin from "@fullcalendar/list";
 import interactionPlugin from "@fullcalendar/interaction";
+import luxonPlugin from "@fullcalendar/luxon3";
 import {DateSelectArg} from "@fullcalendar/core";
+import {formatInTimeZone} from "date-fns-tz";
 import {CalendarControls} from "@/components/calendar/calendar-controls";
 import {AvailableSlotData, SessionData} from "@/components/calendar/types";
 import "@/components/calendar/calendar-styles.css";
@@ -31,6 +33,7 @@ import {
 } from "@tabler/icons-react";
 import {createAvailableSlot, createOneTimeSession, searchStudents} from "@/actions/timeblocks";
 import {getSessionColor, hexToRgba} from "@/lib/session-colors";
+import {usePreferredTimezone} from "@/lib/use-preferred-timezone";
 import type {Student} from "./schedule-sheet";
 import {DatePicker} from "@/components/ui/date-picker";
 import {TimePicker} from "@/components/ui/time-picker";
@@ -123,9 +126,7 @@ const SessionScheduler = ({data, availableSlots}: SessionSchedulerProps) => {
   const [calendarTitle, setCalendarTitle] = useState(
     new Date().toLocaleDateString("en-GB", {month: "long", year: "numeric"})
   );
-  const [timezone] = useState<string>(
-    () => Intl.DateTimeFormat().resolvedOptions().timeZone
-  );
+  const timezone = usePreferredTimezone();
   const [currentView, setCurrentView] = useState("timeGridWeek");
   const [showWeekends, setShowWeekends] = useState(true);
   const [isViewDropdownOpen, setIsViewDropdownOpen] = useState(false);
@@ -221,14 +222,14 @@ const SessionScheduler = ({data, availableSlots}: SessionSchedulerProps) => {
       return;
     }
 
-    const dateStr = start.toISOString().split("T")[0];
+    // Read the selected date/time as wall-clock in the tutor's preferred
+    // timezone (the calendar renders in that zone), not browser-local/UTC.
+    const dateStr = formatInTimeZone(start, timezone, "yyyy-MM-dd");
     let startTime = "09:00";
     let duration = 60;
 
     if (!selectInfo.allDay) {
-      const h = start.getHours().toString().padStart(2, "0");
-      const m = start.getMinutes().toString().padStart(2, "0");
-      startTime = `${h}:${m}`;
+      startTime = formatInTimeZone(start, timezone, "HH:mm");
       if (selectInfo.end) {
         const durationMs = selectInfo.end.getTime() - start.getTime();
         const durationMinutes = Math.max(15, Math.round(durationMs / 60000));
@@ -252,7 +253,7 @@ const SessionScheduler = ({data, availableSlots}: SessionSchedulerProps) => {
     });
     setIsSheetOpen(true);
     calendarRef.current?.getApi().unselect();
-  }, []);
+  }, [timezone]);
 
 
   const handleSave = useCallback(() => {
@@ -341,7 +342,8 @@ const SessionScheduler = ({data, availableSlots}: SessionSchedulerProps) => {
       <div ref={containerRef} className="flex-1 relative overflow-hidden px-5 pb-4">
         <FullCalendar
           ref={calendarRef}
-          plugins={[dayGridPlugin, timeGridPlugin, listPlugin, interactionPlugin]}
+          plugins={[dayGridPlugin, timeGridPlugin, listPlugin, interactionPlugin, luxonPlugin]}
+          timeZone={timezone}
           initialView="timeGridWeek"
           headerToolbar={false}
           height="100%"
