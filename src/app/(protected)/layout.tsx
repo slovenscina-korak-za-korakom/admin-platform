@@ -2,11 +2,14 @@ import {AppSidebar} from "@/components/app-sidebar";
 import {SiteHeader} from "@/components/site-header";
 import {SidebarInset, SidebarProvider} from "@/components/ui/sidebar";
 import React from "react";
-import {currentUser} from "@clerk/nextjs/server";
+import {auth, currentUser} from "@clerk/nextjs/server";
 import {notFound} from "next/navigation";
 import {cookies} from "next/headers";
 
 const ProtectedLayout = async ({children}: { children: React.ReactNode }) => {
+
+  // Resource-based auth: redirect unauthenticated visitors to sign-in.
+  await auth.protect();
 
   const user = await currentUser();
   if (!user) {

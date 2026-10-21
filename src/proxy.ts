@@ -1,28 +1,25 @@
-import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
+import { clerkMiddleware } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 
-const isPublicRoute = createRouteMatcher([
-  "/sign-in(.*)",
-  "/api/invitations(.*)",
-]);
-
+// Authentication is enforced resource-side (the (protected) layout and pages
+// call auth.protect()), not here — path-matching middleware checks can diverge
+// from how Next.js routes requests. This middleware only handles non-auth
+// concerns: locale redirects and bouncing signed-in users off the sign-in page.
 export default clerkMiddleware(async (auth, req) => {
-  // Redirect language-prefixed routes to dashboard
   const pathname = req.nextUrl.pathname;
+
+  // Redirect language-prefixed routes to dashboard
   if (pathname.match(/^\/(en|sl|ru|it)(\/|$)/)) {
     return NextResponse.redirect(new URL("/dashboard", req.url));
   }
 
-  if (isPublicRoute(req)) {
-    // Redirect already-authenticated users away from sign-in
+  // Redirect already-authenticated users away from sign-in
+  if (pathname.startsWith("/sign-in")) {
     const { userId } = await auth();
-    if (userId && pathname.startsWith("/sign-in")) {
+    if (userId) {
       return NextResponse.redirect(new URL("/dashboard", req.url));
     }
-    return NextResponse.next();
   }
-
-  await auth.protect();
 });
 
 export const config = {

@@ -10,7 +10,7 @@ const Page = async () => {
   const user = await currentUser();
   const adminUsers = process.env.ADMIN_USERS?.split(",");
   if (!user) {
-    return null
+    redirect("/sign-in");
   }
   const isAdmin = adminUsers?.includes(user.emailAddresses[0].emailAddress);
   if (user && isAdmin) {
