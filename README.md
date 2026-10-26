@@ -1,67 +1,55 @@
-# Slovenščina Korak za Korkom - Admin Panel
+# Slovenščina Korak za Korakom: Admin Panel
 
-A modern, feature-rich admin dashboard for managing the **Slovenščina Korak za Korakom** (Slovenščina Korak za Korkom) language
-learning platform. Built for tutors and administrators to efficiently manage tutoring sessions, language club events,
-team scheduling, and student bookings.
+**The internal tool that replaced the school's spreadsheets, calendars, and chat-based scheduling.**
 
-## Overview
+Part of the [Slovenščina Korak za Korakom platform](<!-- TODO: link to main platform repo -->) · Live school: [slovenscinakzk.com](https://slovenscinakzk.com)
 
-This admin panel serves as the central hub for running a language tutoring business. It streamlines the day-to-day
-operations of managing one-on-one tutoring sessions, group language club events, and team coordination - all from a
-single, intuitive interface.
+<!-- TODO: add a screenshot of the team schedule or dashboard here -->
 
-### Key Features
+---
 
-- **Dashboard Overview** - At-a-glance view of today's events, sessions, pending actions, and recent activity with smart
-  alerts for items requiring attention
-- **Language Club Management** - Create, edit, and manage group language learning events with capacity tracking,
-  pricing, and Stripe payment integration
-- **Session Scheduling** - Manage individual tutoring timeblocks with flexible duration settings and location support (
-  online/in-person)
-- **Team Coordination** - Overview of all tutors, their schedules, and hours breakdown
-- **Personal Schedule** - Each tutor can manage their own availability and view their assigned sessions
-- **Payment Tracking** - Monitor booking payments with status tracking (pending, paid, cancelled, refunded)
+## The problem
 
-## Tech Stack
+Before this panel, the school's administrator spent **5–10 hours a week** managing tutors' hours and schedules across Excel, Google Calendar, and Telegram. Hours and budgets were calculated by hand.
 
-| Category       | Technology                         |
-|----------------|------------------------------------|
-| Framework      | Next.js 16 (App Router, Turbopack) |
-| Frontend       | React 19, Tailwind CSS 4           |
-| UI Components  | Radix UI, shadcn/ui                |
-| Authentication | Clerk (role-based access)          |
-| Database       | PostgreSQL (Neon) with Drizzle ORM |
-| Calendar       | FullCalendar                       |
-| Forms          | React Hook Form + Zod              |
-| Drag & Drop    | dnd-kit                            |
+The admin panel moves all of that into one place. **10 staff** use it to run **80–100 lesson-hours per week**, and staff hours and budgets are calculated automatically.
 
-## Project Structure
+## What it does
 
-```
-src/
-├── app/
-│   ├── (protected)/          # Authenticated routes
-│   │   ├── dashboard/        # Main dashboard
-│   │   ├── language-club/    # Language club events
-│   │   ├── my-schedule/      # Tutor's personal schedule
-│   │   ├── sessions/         # Session management
-│   │   ├── team/             # Team overview
-│   │   └── course-management/# Course management
-│   └── sign-in/              # Authentication
-├── actions/                  # Server actions
-├── components/               # Reusable components
-│   └── ui/                   # UI primitives
-├── db/                       # Database schema & config
-└── lib/                      # Utilities
+- **Dashboard:** today's sessions and events, pending actions, and alerts for anything that needs attention
+- **Scheduling:** drag-and-drop calendar for one-on-one sessions with recurring events, live availability, and online or in-person locations
+- **Team and budget:** every tutor's schedule, an hours breakdown, and budget tracking, replacing the manual spreadsheet
+- **Language club:** group events with capacity limits, pricing, and Stripe payments
+- **Course management:** uploads lesson videos to the encrypted streaming pipeline (see the [main platform README](<!-- TODO: link to main platform repo -->))
+- **Access control:** role-based access, and new tutors must be activated before they can sign in
+
+---
+
+## Engineering highlight: the time-zone bug
+
+**What happened:** shortly after launch, a tutor entered a session at one time, saved it, and the calendar showed it at a different time. A staff member found it, not a monitor.
+
+**Root cause:** times were stored with a **hard-coded UTC offset**. A fixed offset is wrong for half the year in any zone with daylight saving time, and wrong all year for anyone in a different zone.
+
+**Fix:** every schedule and time slot now stores its **IANA time zone** (for example `Europe/Ljubljana`) together with the local time, and conversions are calculated when the time is displayed (`date-fns-tz`). A session created in Ljubljana now shows the right time for a learner in Moscow all year, even though Slovenia changes its clocks for daylight saving and Russia doesn't.
+
+**What I took from it:** store the user's intent (a local time and a zone), not a precomputed offset. I also learned I need monitoring that catches bugs before users do. That's next on the list.
+
+## Other design decisions
+
+- **All writes go through server actions** with authentication and role checks built in, so no mutation can skip authorization.
+- **Forms are validated** with Zod schemas before anything reaches the database.
+- **End-to-end tests** run in GitHub Actions on every push, and Vercel only deploys when they pass.
+
+**Stack:** Next.js · React · TypeScript · PostgreSQL (Neon, Drizzle ORM) · Clerk · FullCalendar · dnd-kit · Stripe · Vercel
+
+<details>
+<summary>Running locally</summary>
+
+```bash
+bun install
+cp .env.example .env   # fill in Clerk, database, and Stripe values
+bun run dev
 ```
 
-## Architecture Highlights
-
-- **Server Actions** - All data mutations go through type-safe server actions with built-in authentication checks
-- **Role-Based Access** - Admin users are managed via environment configuration with Clerk handling authentication
-- **Tutor Activation Flow** - New tutors must be activated before accessing the system
-- **Timezone Support** - Full timezone handling with `date-fns-tz` for accurate scheduling across regions
-
-## License
-
-Private project - All rights reserved.
+</details>
